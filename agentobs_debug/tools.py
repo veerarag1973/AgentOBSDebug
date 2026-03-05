@@ -30,7 +30,13 @@ def _sanitize(value: object) -> str:
     return s
 
 
-def show_tools(trace_id: str, stream: EventStream | None = None) -> None:
+def show_tools(
+    trace_id: str,
+    stream: EventStream | None = None,
+    *,
+    tool_name: str | None = None,
+    output_format: str = "text",
+) -> None:
     """Print all tool calls recorded in a trace.
 
     Parameters
@@ -63,8 +69,50 @@ def show_tools(trace_id: str, stream: EventStream | None = None) -> None:
     events = _filter_by_trace(stream, trace_id)
     tool_events = [e for e in events if e.event_type == _TOOL_EVENT_TYPE]
 
+    if tool_name is not None:
+        lower = tool_name.lower()
+        tool_events = [e for e in tool_events if e.payload.get("tool_name", "").lower() == lower]
+
     if not tool_events:
-        print("No tool calls recorded.")
+        if output_format == "json":
+            import json as _json
+            print(_json.dumps([], indent=2))
+        elif output_format == "csv":
+            import csv as _csv
+            import io as _io
+            buf = _io.StringIO()
+            writer = _csv.DictWriter(
+                buf, fieldnames=["tool_name", "arguments"], lineterminator="\n"
+            )
+            writer.writeheader()
+            print(buf.getvalue(), end="")
+        else:
+            print("No tool calls recorded.")
+        return
+
+    if output_format == "json":
+        import json as _json
+        rows = [
+            {"tool_name": _sanitize(e.payload.get("tool_name", "unknown")),
+             "arguments": e.payload.get("arguments") or {}}
+            for e in tool_events
+        ]
+        print(_json.dumps(rows, indent=2))
+        return
+
+    if output_format == "csv":
+        import csv as _csv
+        import io as _io
+        import json as _json
+        buf = _io.StringIO()
+        writer = _csv.DictWriter(buf, fieldnames=["tool_name", "arguments"], lineterminator="\n")
+        writer.writeheader()
+        for e in tool_events:
+            writer.writerow({
+                "tool_name": _sanitize(e.payload.get("tool_name", "unknown")),
+                "arguments": _json.dumps(e.payload.get("arguments") or {}),
+            })
+        print(buf.getvalue(), end="")
         return
 
     print("Tool Calls")

@@ -29,6 +29,14 @@ aod.timeline(trace, stream=stream)        # execution timeline
 aod.show_tools(trace, stream=stream)      # tool calls
 aod.show_decisions(trace, stream=stream)  # decision points
 aod.cost_summary(trace, stream=stream)    # token usage + cost
+aod.cost_attribution(trace, stream=stream) # per-step cost/latency table
+
+# Multi-trace
+from agentobs_debug.report import batch_report
+from agentobs_debug.diff import diff_traces
+
+batch_report("events.jsonl")               # summarise all traces in a file
+diff_traces(trace_a, trace_b, stream=stream)  # compare two traces
 ```
 
 ---
@@ -56,6 +64,15 @@ agentobs-debug decisions events.jsonl --trace 4bf92f3577b34da6
 
 # Print cost summary
 agentobs-debug cost events.jsonl --trace 4bf92f3577b34da6
+
+# Per-step cost/latency breakdown with percentiles
+agentobs-debug attribution events.jsonl --trace 4bf92f3577b34da6
+
+# Batch summary across all traces in a file
+agentobs-debug report events.jsonl
+
+# Diff two traces
+agentobs-debug diff events.jsonl --trace-a 4bf92f3577b34da6a3ce929d0e0e4736 --trace-b aaaa0000000000000000000000000001
 ```
 
 ---
@@ -162,6 +179,24 @@ Output tokens: 170
 Total cost: $0.0030
 ```
 
+### `cost_attribution(trace_id: str, stream: EventStream, output_format: str = "text") -> None`
+
+Print a per-step cost and latency breakdown table with p50/p90/p99 duration percentiles.
+
+Import: `from agentobs_debug.attribution import cost_attribution`
+
+### `batch_report(path: str, trace_ids: list[str] | None = None, output_format: str = "text") -> None`
+
+Run `inspect_trace()` for every trace (or a given subset) in a JSONL file and print a summary table. Does not require a pre-loaded stream.
+
+Import: `from agentobs_debug.report import batch_report`
+
+### `diff_traces(trace_id_a: str, trace_id_b: str, stream: EventStream, output_format: str = "text") -> None`
+
+Compare two traces side by side: spans, tokens, cost, duration, status, and per-step breakdown.
+
+Import: `from agentobs_debug.diff import diff_traces`
+
 ---
 
 ## Error Handling
@@ -175,6 +210,12 @@ All errors are typed exceptions that subclass `AgentOBSDebugError`:
 | `InvalidSpanHierarchyError` | Reserved for future use |
 
 In the CLI, all exceptions are caught and printed as `Error: <message>` to stderr with `exit code 1`. Python tracebacks are never shown.
+
+---
+
+## API Reference
+
+See [docs/api-reference.md](docs/api-reference.md) for the full reference: all function signatures, parameters, output formats, exception hierarchy, and complete CLI flag documentation.
 
 ---
 

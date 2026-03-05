@@ -14,7 +14,15 @@ from tracium.stream import EventStream
 from agentobs_debug.errors import AgentOBSDebugError
 
 
-def timeline(trace_id: str, stream: EventStream | None = None) -> None:
+def timeline(
+    trace_id: str,
+    stream: EventStream | None = None,
+    *,
+    from_ms: float | None = None,
+    to_ms: float | None = None,
+    event_type: str | None = None,
+    output_format: str = "text",
+) -> None:
     """Print a millisecond-resolution execution timeline for a trace.
 
     Each span contributes two rows: a *started* row at its start time and a
@@ -71,12 +79,29 @@ def timeline(trace_id: str, stream: EventStream | None = None) -> None:
     events = _filter_by_trace(stream, trace_id)
     spans = [e for e in events if e.event_type in _SPAN_TYPES]
 
+    # Optional event_type prefix filter
+    if event_type is not None:
+        lower_et = event_type.lower()
+        spans = [e for e in spans if e.event_type.lower().startswith(lower_et)]
+
     start_times = [
         int(e.payload.get("start_time_unix_nano"))  # type: ignore[arg-type]
         for e in spans
         if e.payload.get("start_time_unix_nano") is not None
     ]
     if not start_times:
+        if output_format == "json":
+            import json as _json
+            print(_json.dumps([]))
+        elif output_format == "csv":
+            import csv as _csv
+            import io as _io
+            buf = _io.StringIO()
+            writer = _csv.DictWriter(
+                buf, fieldnames=["offset_ms", "label"], lineterminator="\n"
+            )
+            writer.writeheader()
+            print(buf.getvalue(), end="")
         return
     epoch_zero = min(start_times)
 
@@ -92,7 +117,49 @@ def timeline(trace_id: str, stream: EventStream | None = None) -> None:
 
     rows.sort(key=lambda r: r[0])
 
+    # Optional time-range filter
+    if from_ms is not None or to_ms is not None:
+        filtered = []
+        for time_ns, lbl in rows:
+            offset = (time_ns - epoch_zero) / 1_000_000
+            if from_ms is not None and offset < from_ms:
+                continue
+            if to_ms is not None and offset > to_ms:
+                continue
+            filtered.append((time_ns, lbl))
+        rows = filtered
+
     if not rows:
+        if output_format == "json":
+            import json as _json
+            print(_json.dumps([]))
+        elif output_format == "csv":
+            import csv as _csv
+            import io as _io
+            buf = _io.StringIO()
+            writer = _csv.DictWriter(buf, fieldnames=["offset_ms", "label"], lineterminator="\n")
+            writer.writeheader()
+            print(buf.getvalue(), end="")
+        return
+
+    if output_format == "json":
+        import json as _json
+        out = [
+            {"offset_ms": round((t - epoch_zero) / 1_000_000, 3), "label": lbl}
+            for t, lbl in rows
+        ]
+        print(_json.dumps(out, indent=2))
+        return
+
+    if output_format == "csv":
+        import csv as _csv
+        import io as _io
+        buf = _io.StringIO()
+        writer = _csv.DictWriter(buf, fieldnames=["offset_ms", "label"], lineterminator="\n")
+        writer.writeheader()
+        for t, lbl in rows:
+            writer.writerow({"offset_ms": round((t - epoch_zero) / 1_000_000, 3), "label": lbl})
+        print(buf.getvalue(), end="")
         return
 
     max_offset = int((max(t for t, _ in rows) - epoch_zero) / 1_000_000)

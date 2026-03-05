@@ -1,6 +1,6 @@
 # agentobs-debug Tutorial
 
-**Version:** 0.1.0  
+**Version:** 1.0.0  
 **Audience:** Developers who build or operate AI agents with the AgentOBS SDK and need to inspect, debug, and understand trace data.
 
 ---
@@ -159,7 +159,7 @@ Verify the install:
 
 ```bash
 agentobs-debug --version
-# agentobs-debug 0.1.0
+# agentobs-debug 1.0.0
 
 agentobs-debug --help
 ```
@@ -495,10 +495,12 @@ Every function described above is also available as a CLI subcommand. The CLI is
 ### General syntax
 
 ```bash
-agentobs-debug COMMAND events.jsonl --trace TRACE_ID
+agentobs-debug COMMAND EVENTS_FILE [OPTIONS]
 ```
 
-The `--trace` flag is required for all subcommands — it selects which trace to render from the file.
+`--trace` is required for single-trace commands (`replay`, `inspect`, `tree`, `timeline`, `tools`, `decisions`, `cost`, `attribution`).
+
+`report` does not require `--trace` (it can report all traces), and `diff` uses `--trace-a` and `--trace-b`.
 
 ### All subcommands
 
@@ -523,6 +525,28 @@ agentobs-debug decisions events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736
 
 # Cost summary
 agentobs-debug cost events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736
+
+# Per-step cost and latency attribution
+agentobs-debug attribution events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736
+
+# Batch report across all traces in a file
+agentobs-debug report events.jsonl
+
+# Batch report for selected traces only (repeat --trace)
+agentobs-debug report events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 --trace aaaa0000000000000000000000000001
+
+# Compare two traces side by side
+agentobs-debug diff events.jsonl --trace-a 4bf92f3577b34da6a3ce929d0e0e4736 --trace-b aaaa0000000000000000000000000001
+
+# Machine-readable output (supported by most commands)
+agentobs-debug inspect events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 --format json
+agentobs-debug cost events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 --format csv
+
+# Additional filters
+agentobs-debug replay events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 --step search
+agentobs-debug timeline events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 --from-ms 100 --to-ms 500 --event-type llm.trace.span
+agentobs-debug tools events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 --tool-name search_api
+agentobs-debug decisions events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 --decision-name tool_selection
 ```
 
 ### CLI tips
@@ -537,7 +561,7 @@ agentobs-debug tree events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 > tree
 
 ```bash
 agentobs-debug --version
-# agentobs-debug 0.1.0
+# agentobs-debug 1.0.0
 ```
 
 **Pipe into a pager for long timelines:**
@@ -599,7 +623,7 @@ Exit code is `1` on any error. Python tracebacks are never shown.
 
 ## 16. Working with multiple traces in one file
 
-A single JSONL file can contain events from many different agent runs. `agentobs-debug` uses `--trace` / `trace_id` to filter down to one run at a time.
+A single JSONL file can contain events from many different agent runs. Most commands use `--trace` / `trace_id` to filter down to one run at a time, while `report` can summarize all traces and `diff` compares two selected traces.
 
 **Example — two traces in one file:**
 

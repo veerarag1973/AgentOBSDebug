@@ -31,7 +31,13 @@ def _sanitize(value: object) -> str:
     return s
 
 
-def show_decisions(trace_id: str, stream: EventStream | None = None) -> None:
+def show_decisions(
+    trace_id: str,
+    stream: EventStream | None = None,
+    *,
+    decision_name: str | None = None,
+    output_format: str = "text",
+) -> None:
     """Print all decision points recorded in a trace.
 
     Parameters
@@ -63,8 +69,63 @@ def show_decisions(trace_id: str, stream: EventStream | None = None) -> None:
     events = _filter_by_trace(stream, trace_id)
     decisions = [e for e in events if e.event_type == _DECISION_EVENT_TYPE]
 
+    if decision_name is not None:
+        lower = decision_name.lower()
+        decisions = [
+            e for e in decisions
+            if e.payload.get("decision_name", "").lower() == lower
+        ]
+
     if not decisions:
-        print("No decision points recorded.")
+        if output_format == "json":
+            import json as _json
+            print(_json.dumps([], indent=2))
+        elif output_format == "csv":
+            import csv as _csv
+            import io as _io
+            buf = _io.StringIO()
+            writer = _csv.DictWriter(
+                buf,
+                fieldnames=["decision_name", "options", "chosen"],
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            print(buf.getvalue(), end="")
+        else:
+            print("No decision points recorded.")
+        return
+
+    if output_format == "json":
+        import json as _json
+        rows = [
+            {
+                "decision_name": _sanitize(e.payload.get("decision_name", "unknown")),
+                "options": [_sanitize(o) for o in (e.payload.get("options") or [])],
+                "chosen": _sanitize(e.payload.get("chosen", "unknown")),
+            }
+            for e in decisions
+        ]
+        print(_json.dumps(rows, indent=2))
+        return
+
+    if output_format == "csv":
+        import csv as _csv
+        import io as _io
+        buf = _io.StringIO()
+        writer = _csv.DictWriter(
+            buf,
+            fieldnames=["decision_name", "options", "chosen"],
+            lineterminator="\n",
+        )
+        writer.writeheader()
+        for e in decisions:
+            p = e.payload
+            writer.writerow({
+                "decision_name": _sanitize(p.get("decision_name", "unknown")),
+                "options": ", ".join(_sanitize(o) for o in (p.get("options") or [])),
+                "chosen": _sanitize(p.get("chosen", "unknown")),
+            })
+        print(buf.getvalue(), end="")
         return
 
     for i, evt in enumerate(decisions):

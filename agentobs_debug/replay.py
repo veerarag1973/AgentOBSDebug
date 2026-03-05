@@ -17,7 +17,13 @@ _AGENT_STEP_TYPE = "llm.trace.agent.step.completed"
 _SPAN_TYPE = "llm.trace.span.completed"
 
 
-def replay(trace_id: str, stream: EventStream | None = None) -> None:
+def replay(
+    trace_id: str,
+    stream: EventStream | None = None,
+    *,
+    step_name: str | None = None,
+    output_format: str = "text",
+) -> None:
     """Print a sequential replay of an agent run.
 
     Locates all events for *trace_id*, reconstructs the span hierarchy, then
@@ -50,13 +56,19 @@ def replay(trace_id: str, stream: EventStream | None = None) -> None:
         raise AgentOBSDebugError(f"No agent_run event found in trace {trace_id!r}")
 
     agent_name = run_event.payload.get("agent_name", "unknown")
-    print(f"Agent Run: {agent_name}")
-    print(f"Trace: {trace_id}")
 
     step_events = sorted(
         [e for e in events if e.event_type == _AGENT_STEP_TYPE],
         key=lambda e: e.payload.get("step_index", 0),
     )
+
+    # filter by step name if requested
+    if step_name is not None:
+        lower = step_name.lower()
+        step_events = [
+            s for s in step_events
+            if s.payload.get("step_name", "").lower() == lower
+        ]
 
     # Pre-index child spans by parent_span_id for O(1) lookup per step
     span_by_parent: dict[str, Event] = {
@@ -65,8 +77,42 @@ def replay(trace_id: str, stream: EventStream | None = None) -> None:
         if e.event_type == _SPAN_TYPE and e.parent_span_id is not None
     }
 
+    if output_format == "json":
+        import json as _json
+
+        steps_out = []
+        for step in step_events:
+            si = step.payload.get("step_index")
+            sn = step.payload.get("step_name", "unknown")
+            dur = step.payload.get("duration_ms")
+            chat = span_by_parent.get(step.span_id) if step.span_id is not None else None
+            mdl = None
+            total_tok = None
+            if chat is not None:
+                mi = chat.payload.get("model_info")
+                if mi:
+                    mdl = mi.get("name")
+                tu = chat.payload.get("token_usage")
+                if tu:
+                    total_tok = tu.get("total_tokens")
+            steps_out.append({
+                "step_index": si,
+                "step_name": sn,
+                "model": mdl,
+                "tokens": total_tok,
+                "duration_ms": dur,
+            })
+        print(_json.dumps(
+            {"agent_name": agent_name, "trace_id": trace_id, "steps": steps_out},
+            indent=2,
+        ))
+        return
+
+    print(f"Agent Run: {agent_name}")
+    print(f"Trace: {trace_id}")
+
     for step in step_events:
-        step_name = step.payload.get("step_name", "unknown")
+        sname = step.payload.get("step_name", "unknown")
         step_index = step.payload.get("step_index", "?")
         duration_ms = step.payload.get("duration_ms")
 
@@ -83,7 +129,7 @@ def replay(trace_id: str, stream: EventStream | None = None) -> None:
                 tokens = str(token_usage.get("total_tokens", "N/A"))
 
         dur_str = f"{int(duration_ms)} ms" if duration_ms is not None else "N/A"
-        print(f"\nStep {step_index} \u2014 {step_name}")
+        print(f"\nStep {step_index} \u2014 {sname}")
         print(f"Model: {model}")
         print(f"Tokens: {tokens}")
         print(f"Duration: {dur_str}")

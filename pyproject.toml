@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentobs-debug"
-version = "0.1.0"
+version = "1.0.0"
 description = "Developer tools for inspecting and debugging AgentOBS traces"
 readme = "README.md"
 license = { text = "MIT" }

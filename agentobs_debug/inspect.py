@@ -11,7 +11,12 @@ from tracium.stream import EventStream
 from agentobs_debug.errors import AgentOBSDebugError
 
 
-def inspect_trace(trace_id: str, stream: EventStream | None = None) -> None:
+def inspect_trace(
+    trace_id: str,
+    stream: EventStream | None = None,
+    *,
+    output_format: str = "text",
+) -> None:
     """Print a summary of a trace: span count, tokens, cost, duration, status.
 
     Parameters
@@ -90,6 +95,39 @@ def inspect_trace(trace_id: str, stream: EventStream | None = None) -> None:
         if start is not None and end is not None:
             duration_s = (end - start) / 1_000_000_000
         status = run_event.payload.get("status") or "ok"
+
+    if output_format == "json":
+        import json as _json
+        print(_json.dumps({
+            "trace_id": trace_id,
+            "spans": total_spans,
+            "tokens": total_tokens,
+            "cost_usd": round(total_cost, 6),
+            "duration_s": round(duration_s, 3),
+            "status": status,
+        }, indent=2))
+        return
+
+    if output_format == "csv":
+        import csv as _csv
+        import io as _io
+        buf = _io.StringIO()
+        writer = _csv.DictWriter(
+            buf,
+            fieldnames=["trace_id", "spans", "tokens", "cost_usd", "duration_s", "status"],
+            lineterminator="\n",
+        )
+        writer.writeheader()
+        writer.writerow({
+            "trace_id": trace_id,
+            "spans": total_spans,
+            "tokens": total_tokens,
+            "cost_usd": f"{total_cost:.6f}",
+            "duration_s": f"{duration_s:.3f}",
+            "status": status,
+        })
+        print(buf.getvalue(), end="")
+        return
 
     print("Trace Summary")
     print("-------------")

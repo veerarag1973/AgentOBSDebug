@@ -4,6 +4,38 @@ All notable changes to `agentobs-debug` are documented here.
 
 ---
 
+## 1.0.0 — Stable Release
+
+### Added
+
+- Output format support across analysis commands: `--format text|json|csv`
+- Filter flags for focused analysis:
+	- `replay --step`
+	- `timeline --from-ms`, `--to-ms`, `--event-type`
+	- `tools --tool-name`
+	- `decisions --decision-name`
+- New analysis modules and commands:
+	- `cost_attribution()` / `agentobs-debug attribution`
+	- `batch_report()` / `agentobs-debug report`
+	- `diff_traces()` / `agentobs-debug diff`
+- Internal filtering utilities in `agentobs_debug/filter.py`
+- Expanded automated test coverage for output formats, filtering, attribution, report, and diff workflows
+
+### Changed
+
+- CLI surface expanded from 7 to 10 subcommands
+- Documentation updated for full CLI/API parity:
+	- `README.md`
+	- `docs/tutorial/index.md`
+	- `docs/api-reference.md`
+
+### Quality
+
+- Lint/type/test gates passing (`ruff`, `mypy`, `pytest`)
+- Coverage remains above project threshold (`>= 90%`)
+
+---
+
 ## 0.1.0 — Initial Release
 
 ### Added

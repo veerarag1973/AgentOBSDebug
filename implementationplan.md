@@ -638,6 +638,138 @@ Before tagging `v0.1.0`:
 
 ---
 
+## Phase 8 — Filtering & Output Formats
+
+**Goal:** Make every analysis function useful in scripts and pipelines by adding per-call filtering and machine-readable output formats.
+
+### 8.1 Internal filter utilities (`filter.py`)
+
+Create `agentobs_debug/filter.py` with three pure helper functions (not exported in `__init__.py`):
+
+- `filter_by_step_name(events, step_name)` — keep only `agent.step.completed` events whose `step_name` matches (case-insensitive exact match).
+- `filter_timeline_rows(rows, epoch_ns, from_ms, to_ms)` — keep `(time_ns, label)` rows within a millisecond window.
+- `filter_spans_by_event_type(spans, event_type)` — keep spans whose `event_type` starts with the given prefix.
+
+### 8.2 Filter parameters
+
+Add optional keyword-only parameters to existing functions:
+
+| Function | New parameter | Behaviour |
+|---|---|---|
+| `replay()` | `step_name: str \| None = None` | Show only the named step |
+| `timeline()` | `from_ms: float \| None`, `to_ms: float \| None`, `event_type: str \| None` | Time-window and type filter |
+| `show_tools()` | `tool_name: str \| None = None` | Filter to a single tool |
+| `show_decisions()` | `decision_name: str \| None = None` | Filter to a single decision |
+
+### 8.3 `output_format` parameter
+
+Add `output_format: str = "text"` to `replay`, `inspect_trace`, `timeline`, `show_tools`, `show_decisions`, `cost_summary`.
+
+Supported values: `"text"` (default, current behaviour), `"json"`, `"csv"`.
+
+#### JSON schema per function
+
+| Function | JSON shape |
+|---|---|
+| `inspect_trace` | `{"trace_id","spans","tokens","cost_usd","duration_s","status"}` |
+| `replay` | `{"agent_name","trace_id","steps":[{"step_index","step_name","model","tokens","duration_ms"}]}` |
+| `timeline` | `[{"offset_ms","label"}]` |
+| `show_tools` | `[{"tool_name","arguments"}]` |
+| `show_decisions` | `[{"decision_name","options","chosen"}]` |
+| `cost_summary` | `{"input_tokens","output_tokens","total_tokens","total_cost_usd"}` |
+
+#### CSV schema per function
+
+Each function outputs a header row followed by one row per record.
+
+### 8.4 CLI flags
+
+Add to each existing subcommand:
+
+- `--format {text,json,csv}` (default: `text`)
+- `--step STEP_NAME` on `replay`
+- `--event-type EVENT_TYPE` on `timeline`
+- `--from-ms FLOAT` and `--to-ms FLOAT` on `timeline`
+- `--tool-name TOOL_NAME` on `tools`
+- `--decision-name DECISION_NAME` on `decisions`
+
+**Deliverable:** All existing tests still pass; new `output_format` and filter params covered by updated tests.
+
+---
+
+## Phase 9 — Batch Report, Trace Diff & Per-Step Attribution
+
+**Goal:** Add three new high-value analysis commands for multi-trace workflows.
+
+### 9.1 Batch report (`report.py`)
+
+New module `agentobs_debug/report.py`, new public function:
+
+```python
+def batch_report(
+    path: str,
+    trace_ids: list[str] | None = None,
+    output_format: str = "text",
+) -> None:
+    """Run inspect_trace() for every trace (or the given subset) in a JSONL file."""
+```
+
+- When `trace_ids` is `None`, report on every distinct `trace_id` in the file.
+- `text` format: each trace's `inspect_trace` output separated by a `---` divider.
+- `json` format: a JSON list of inspect dicts.
+- `csv` format: one row per trace.
+
+CLI command: `agentobs-debug report EVENTS_FILE [--trace T1 --trace T2] [--format text|json|csv]`
+
+### 9.2 Trace diff (`diff.py`)
+
+New module `agentobs_debug/diff.py`, new public function:
+
+```python
+def diff_traces(
+    trace_id_a: str,
+    trace_id_b: str,
+    stream: EventStream | None = None,
+    output_format: str = "text",
+) -> None:
+    """Compare two traces and print a diff of spans, tokens, cost, and duration."""
+```
+
+Diff includes:
+- Summary: duration delta, token delta, cost delta, span count delta, status change.
+- Per-step diff: steps matched by `step_name`; shows added/removed/changed steps with `→` notation.
+
+CLI command: `agentobs-debug diff EVENTS_FILE --trace-a T1 --trace-b T2 [--format text|json]`
+
+### 9.3 Per-step attribution (`attribution.py`)
+
+New module `agentobs_debug/attribution.py`, new public function:
+
+```python
+def cost_attribution(
+    trace_id: str,
+    stream: EventStream | None = None,
+    output_format: str = "text",
+) -> None:
+    """Print per-step cost and latency breakdown with percentiles."""
+```
+
+Output includes:
+- Table: step name, model, input tokens, output tokens, cost USD, duration ms, % of total duration.
+- Latency percentiles across steps: p50, p90, p99.
+
+CLI command: `agentobs-debug attribution EVENTS_FILE --trace T1 [--format text|json|csv]`
+
+### 9.4 Tests
+
+- `tests/test_report.py` — batch_report text/json/csv + unknown trace filtering.
+- `tests/test_diff.py` — diff identical traces, diff traces with added/removed steps, JSON output.
+- `tests/test_attribution.py` — per-step table correctness, percentile calculation, JSON/CSV output.
+
+**Deliverable:** Three new commands functional in CLI and Python API; all tests pass; coverage ≥ 90%.
+
+---
+
 ## Phase Summary Table
 
 | Phase | Name | Priority | Functions / Artifacts |
@@ -650,6 +782,8 @@ Before tagging `v0.1.0`:
 | 5 | Error Hardening | MUST | Robustness across all functions and CLI |
 | 6 | Performance | SHOULD | 10k event / 1k span benchmarks |
 | 7 | Docs & Release | SHOULD | README, docstrings, CHANGELOG, final QA gates |
+| 8 | Filtering & Output Formats | SHOULD | `filter.py`, `--format`, `--step`, `--event-type`, time-range flags |
+| 9 | Batch Report / Diff / Attribution | SHOULD | `report.py`, `diff.py`, `attribution.py`, 3 new CLI commands |
 
 ---
 
