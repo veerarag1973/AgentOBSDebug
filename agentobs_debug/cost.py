@@ -3,25 +3,20 @@ cost.py — Display aggregated token usage and cost for a trace.
 
 Implements the ``cost_summary()`` SHOULD function from MODULE-SPEC-0001 §13.
 
-Aggregates TokenUsage and CostBreakdown data from all span events in the trace.
-Cost data may live in:
-  - SpanPayload.token_usage  (dict with input_tokens / output_tokens / total_tokens)
-  - llm.cost.token.recorded  events (CostTokenRecordedPayload.cost / .token_usage)
-Both sources are consulted and summed.
+Aggregates TokenUsage and CostBreakdown data from ``llm.cost.token.recorded``
+events in the trace (CostTokenRecordedPayload.cost / .token_usage).
 """
 
 from __future__ import annotations
 
-from tracium.stream import EventStream  # type: ignore[import]
+from tracium.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
-from agentobs_debug.loader import _filter_by_trace
 
-_SPAN_TYPE = "llm.trace.span.completed"
 _COST_TOKEN_TYPE = "llm.cost.token.recorded"
 
 
-def cost_summary(trace_id: str, stream: "EventStream | None" = None) -> None:
+def cost_summary(trace_id: str, stream: EventStream | None = None) -> None:
     """Print aggregated token usage and cost for a trace.
 
     Parameters
@@ -50,4 +45,23 @@ def cost_summary(trace_id: str, stream: "EventStream | None" = None) -> None:
         raise AgentOBSDebugError(
             "An EventStream is required. Call load_events() first and pass the result as `stream`."
         )
-    raise NotImplementedError("cost_summary() — implemented in Phase 3")
+    from agentobs_debug.loader import _filter_by_trace
+
+    events = _filter_by_trace(stream, trace_id)
+    input_tokens = 0
+    output_tokens = 0
+    total_cost = 0.0
+
+    for evt in events:
+        if evt.event_type == _COST_TOKEN_TYPE:
+            tu = evt.payload.get("token_usage") or {}
+            input_tokens += tu.get("input_tokens", 0)
+            output_tokens += tu.get("output_tokens", 0)
+            cost = evt.payload.get("cost") or {}
+            total_cost += cost.get("total_cost_usd", 0.0)
+
+    print("Cost Summary")
+    print("------------")
+    print(f"Input tokens: {input_tokens}")
+    print(f"Output tokens: {output_tokens}")
+    print(f"Total cost: ${total_cost:.4f}")

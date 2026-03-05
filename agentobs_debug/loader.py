@@ -13,7 +13,8 @@ deserialises each line with Event.from_json() internally.
 
 from __future__ import annotations
 
-from tracium.stream import EventStream  # type: ignore[import]
+from tracium.event import Event
+from tracium.stream import EventStream
 
 from agentobs_debug.errors import CorruptEventError, TraceNotFoundError
 
@@ -40,13 +41,17 @@ def load_events(path: str) -> EventStream:
     """
     try:
         return EventStream.from_file(path)
+    except FileNotFoundError as exc:
+        raise CorruptEventError(f"Events file not found: {path!r}") from exc
+    except OSError as exc:
+        raise CorruptEventError(f"Cannot read events file {path!r}: {exc}") from exc
     except Exception as exc:
         raise CorruptEventError(
-            f"Failed to load events from {path!r}: {exc}"
+            f"Failed to parse events from {path!r}: {exc}"
         ) from exc
 
 
-def _filter_by_trace(stream: EventStream, trace_id: str) -> list:  # list[Event]
+def _filter_by_trace(stream: EventStream, trace_id: str) -> list[Event]:
     """Return all events in *stream* that belong to *trace_id*.
 
     Parameters

@@ -119,7 +119,7 @@ Set up a basic GitHub Actions (or equivalent) workflow:
 This module MUST NOT call any JSONL parsing logic directly. All parsing is delegated to:
 
 ```python
-agentobs.EventStream.from_jsonl(path)
+agentobs.EventStream.from_file(path)
 ```
 
 ### Tasks
@@ -133,7 +133,7 @@ from agentobs_debug.errors import CorruptEventError
 def load_events(path: str) -> EventStream:
     """Load events from a JSONL file using AgentOBS EventStream."""
     try:
-        return EventStream.from_jsonl(path)
+        return EventStream.from_file(path)
     except Exception as exc:
         raise CorruptEventError(f"Failed to load events from {path!r}: {exc}") from exc
 ```
@@ -658,7 +658,7 @@ Before tagging `v0.1.0`:
 | Constraint | Source |
 |---|---|
 | MUST NOT generate AgentOBS events | §1 |
-| MUST use `EventStream.from_jsonl()` for JSONL loading | §6 |
+| MUST use `EventStream.from_file()` for JSONL loading | §6 |
 | MUST NOT reimplement event parsing or trace hierarchy | §3 |
 | MUST NOT generate ULIDs | §3 |
 | MUST use `span_id` / `parent_span_id` for tree | §9 |

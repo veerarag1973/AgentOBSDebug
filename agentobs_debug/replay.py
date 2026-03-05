@@ -6,10 +6,10 @@ Implements the ``replay()`` MUST function from MODULE-SPEC-0001 §7.
 
 from __future__ import annotations
 
-from tracium.stream import EventStream  # type: ignore[import]
+from tracium.event import Event
+from tracium.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
-from agentobs_debug.loader import _filter_by_trace
 
 # Event type constants used when walking the span tree
 _AGENT_RUN_TYPE = "llm.trace.agent.run.completed"
@@ -17,7 +17,7 @@ _AGENT_STEP_TYPE = "llm.trace.agent.step.completed"
 _SPAN_TYPE = "llm.trace.span.completed"
 
 
-def replay(trace_id: str, stream: "EventStream | None" = None) -> None:
+def replay(trace_id: str, stream: EventStream | None = None) -> None:
     """Print a sequential replay of an agent run.
 
     Locates all events for *trace_id*, reconstructs the span hierarchy, then
@@ -41,4 +41,49 @@ def replay(trace_id: str, stream: "EventStream | None" = None) -> None:
         raise AgentOBSDebugError(
             "An EventStream is required. Call load_events() first and pass the result as `stream`."
         )
-    raise NotImplementedError("replay() — implemented in Phase 2")
+    from agentobs_debug.loader import _filter_by_trace
+
+    events = _filter_by_trace(stream, trace_id)
+
+    run_event = next((e for e in events if e.event_type == _AGENT_RUN_TYPE), None)
+    if run_event is None:
+        raise AgentOBSDebugError(f"No agent_run event found in trace {trace_id!r}")
+
+    agent_name = run_event.payload.get("agent_name", "unknown")
+    print(f"Agent Run: {agent_name}")
+    print(f"Trace: {trace_id}")
+
+    step_events = sorted(
+        [e for e in events if e.event_type == _AGENT_STEP_TYPE],
+        key=lambda e: e.payload.get("step_index", 0),
+    )
+
+    # Pre-index child spans by parent_span_id for O(1) lookup per step
+    span_by_parent: dict[str, Event] = {
+        e.parent_span_id: e
+        for e in events
+        if e.event_type == _SPAN_TYPE and e.parent_span_id is not None
+    }
+
+    for step in step_events:
+        step_name = step.payload.get("step_name", "unknown")
+        step_index = step.payload.get("step_index", "?")
+        duration_ms = step.payload.get("duration_ms")
+
+        chat_event = span_by_parent.get(step.span_id) if step.span_id is not None else None
+
+        model = "N/A"
+        tokens = "N/A"
+        if chat_event is not None:
+            model_info = chat_event.payload.get("model_info")
+            if model_info:
+                model = model_info.get("name", "N/A")
+            token_usage = chat_event.payload.get("token_usage")
+            if token_usage:
+                tokens = str(token_usage.get("total_tokens", "N/A"))
+
+        dur_str = f"{int(duration_ms)} ms" if duration_ms is not None else "N/A"
+        print(f"\nStep {step_index} \u2014 {step_name}")
+        print(f"Model: {model}")
+        print(f"Tokens: {tokens}")
+        print(f"Duration: {dur_str}")

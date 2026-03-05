@@ -9,15 +9,28 @@ the ``tool_name`` and ``arguments`` fields from the ToolCallPayload.
 
 from __future__ import annotations
 
-from tracium.stream import EventStream  # type: ignore[import]
+import re
+
+from tracium.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
-from agentobs_debug.loader import _filter_by_trace
 
 _TOOL_EVENT_TYPE = "x.agentobs.tool.called"
 
+# Compiled patterns for terminal-injection sanitisation
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+_CTRL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
-def show_tools(trace_id: str, stream: "EventStream | None" = None) -> None:
+
+def _sanitize(value: object) -> str:
+    """Strip ANSI escape sequences and control characters from user-controlled strings."""
+    s = str(value)
+    s = _ANSI_ESCAPE.sub("", s)
+    s = _CTRL_CHARS.sub("", s)
+    return s
+
+
+def show_tools(trace_id: str, stream: EventStream | None = None) -> None:
     """Print all tool calls recorded in a trace.
 
     Parameters
@@ -45,4 +58,20 @@ def show_tools(trace_id: str, stream: "EventStream | None" = None) -> None:
         raise AgentOBSDebugError(
             "An EventStream is required. Call load_events() first and pass the result as `stream`."
         )
-    raise NotImplementedError("show_tools() — implemented in Phase 3")
+    from agentobs_debug.loader import _filter_by_trace
+
+    events = _filter_by_trace(stream, trace_id)
+    tool_events = [e for e in events if e.event_type == _TOOL_EVENT_TYPE]
+
+    if not tool_events:
+        print("No tool calls recorded.")
+        return
+
+    print("Tool Calls")
+    print("----------")
+    for evt in tool_events:
+        p = evt.payload
+        name = _sanitize(p.get("tool_name", "unknown"))
+        args = p.get("arguments") or {}
+        args_str = ", ".join(f'{k}="{_sanitize(v)}"' for k, v in args.items())
+        print(f"{name}({args_str})")

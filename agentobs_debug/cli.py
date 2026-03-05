@@ -22,7 +22,6 @@ cost        Print cost summary.
 from __future__ import annotations
 
 import argparse
-import sys
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -53,9 +52,48 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: "list[str] | None" = None) -> None:
-    """CLI entry point — implemented in Phase 4."""
-    raise NotImplementedError("CLI — implemented in Phase 4")
+def main(argv: list[str] | None = None) -> None:
+    """CLI entry point."""
+    import sys
+
+    from agentobs_debug import (
+        cost_summary,
+        inspect_trace,
+        print_trace_tree,
+        replay,
+        show_decisions,
+        show_tools,
+        timeline,
+    )
+    from agentobs_debug.errors import AgentOBSDebugError
+    from agentobs_debug.loader import load_events
+
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+
+    try:
+        stream = load_events(args.events_file)
+        cmd = args.command
+        if cmd == "replay":
+            replay(args.trace, stream=stream)
+        elif cmd == "inspect":
+            inspect_trace(args.trace, stream=stream)
+        elif cmd == "tree":
+            print_trace_tree(args.trace, stream=stream)
+        elif cmd == "timeline":
+            timeline(args.trace, stream=stream)
+        elif cmd == "tools":
+            show_tools(args.trace, stream=stream)
+        elif cmd == "decisions":
+            show_decisions(args.trace, stream=stream)
+        elif cmd == "cost":
+            cost_summary(args.trace, stream=stream)
+    except AgentOBSDebugError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as exc:  # pragma: no cover
+        print(f"Unexpected error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
