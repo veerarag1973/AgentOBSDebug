@@ -4,6 +4,35 @@ All notable changes to `agentobs-debug` are documented here.
 
 ---
 
+## 1.0.1 — agentobs import rename
+
+### Changed
+
+- Updated all internal imports from `tracium` to `agentobs` following the
+  agentobs 1.0.5 SDK rename (`pip install agentobs` now exposes the
+  `agentobs` package name instead of `tracium`).
+- Updated `pyproject.toml` dependency to `agentobs>=1.0.5`.
+- Updated dependency references in `README.md` and `docs/tutorial/index.md`
+  from `agentobs >= 1.0` to `agentobs >= 1.0.5`.
+- Updated `agentobs.stream.EventStream` type reference in `docs/api-reference.md`
+  (was `tracium.stream.EventStream`).
+- `cli.py` `_build_parser()` now reads the version string dynamically from
+  `agentobs_debug.__version__` instead of a hardcoded literal, ensuring
+  `--version` output is always in sync with the package version.
+- Version bumped to `1.0.1` across `pyproject.toml`, `agentobs_debug/__init__.py`,
+  and all documentation.
+
+### Tests
+
+- Added `TestCLIVersion` to `tests/test_cli.py` with two new tests:
+  - `test_version_output_matches_package_version` — asserts `--version` stdout
+    contains `agentobs_debug.__version__`.
+  - `test_version_string_in_cli_matches_pyproject` — reads `pyproject.toml` via
+    `tomllib` and asserts the version string matches `agentobs_debug.__version__`,
+    locking all three version sources together.
+
+---
+
 ## 1.0.0 — Stable Release
 
 ### Added

@@ -1,6 +1,6 @@
 # agentobs-debug API Reference
 
-**Version:** 1.0.0
+**Version:** 1.0.1
 
 This document is the complete reference for the `agentobs-debug` package. The package exposes a **Python API** for programmatic use and a **CLI** for shell-based inspection. Both surfaces provide identical capabilities.
 
@@ -101,7 +101,7 @@ Load a JSONL events file into an `EventStream` using the AgentOBS SDK.
 
 #### Returns
 
-`tracium.stream.EventStream` — an immutable, iterable sequence of `Event` objects.
+`agentobs.stream.EventStream` — an immutable, iterable sequence of `Event` objects.
 
 #### Raises
 
@@ -833,7 +833,7 @@ agentobs-debug COMMAND EVENTS_FILE [OPTIONS]
 - `--format FORMAT` — output format (`text`, `json`, or `csv`). Default: `text`.
 
 ```bash
-agentobs-debug --version   # agentobs-debug 1.0.0
+agentobs-debug --version   # agentobs-debug 1.0.1
 agentobs-debug --help
 agentobs-debug COMMAND --help
 ```
@@ -1096,7 +1096,7 @@ from agentobs_debug.errors import (
 
 # Version
 import agentobs_debug
-print(agentobs_debug.__version__)  # 1.0.0
+print(agentobs_debug.__version__)  # 1.0.1
 ```
 
 ### What's in `__all__`

@@ -6,8 +6,8 @@ Implements the ``replay()`` MUST function from MODULE-SPEC-0001 §7.
 
 from __future__ import annotations
 
-from tracium.event import Event
-from tracium.stream import EventStream
+from agentobs.event import Event
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
 

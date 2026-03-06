@@ -124,5 +124,28 @@ class TestCLIErrorHandling:
         assert exc_info.value.code == 1
 
 
+class TestCLIVersion:
+    def test_version_output_matches_package_version(self, capsys: pytest.CaptureFixture) -> None:
+        """--version output must match agentobs_debug.__version__ exactly."""
+        import agentobs_debug
+
+        with pytest.raises(SystemExit):
+            main(["--version"])
+        out = capsys.readouterr().out
+        assert agentobs_debug.__version__ in out
+
+    def test_version_string_in_cli_matches_pyproject(self) -> None:
+        """agentobs_debug.__version__ must match the version declared in pyproject.toml."""
+        import tomllib
+        from pathlib import Path
+
+        import agentobs_debug
+
+        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        with open(pyproject_path, "rb") as f:
+            pyproject = tomllib.load(f)
+        assert agentobs_debug.__version__ == pyproject["project"]["version"]
+
+
 
 

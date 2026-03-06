@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from tracium.stream import EventStream
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import CorruptEventError, TraceNotFoundError
 from agentobs_debug.loader import _filter_by_trace, load_events

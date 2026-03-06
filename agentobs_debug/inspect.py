@@ -6,7 +6,7 @@ Implements the ``inspect_trace()`` MUST function from MODULE-SPEC-0001 §8.
 
 from __future__ import annotations
 
-from tracium.stream import EventStream
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
 

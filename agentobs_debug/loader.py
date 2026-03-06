@@ -1,20 +1,20 @@
 """
 loader.py — Load AgentOBS events from supported sources.
 
-The module MUST use tracium.stream.EventStream for all loading.
+The module MUST use agentobs.stream.EventStream for all loading.
 It MUST NOT reimplement event parsing.
 
 SDK note
 --------
-The AgentOBS SDK is installed as `agentobs` (pip install agentobs) and imported
-as `tracium`.  JSONL loading is provided by EventStream.from_file(), which
+The AgentOBS SDK is installed and imported as `agentobs` (pip install agentobs).
+JSONL loading is provided by EventStream.from_file(), which
 deserialises each line with Event.from_json() internally.
 """
 
 from __future__ import annotations
 
-from tracium.event import Event
-from tracium.stream import EventStream
+from agentobs.event import Event
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import CorruptEventError, TraceNotFoundError
 
@@ -22,7 +22,7 @@ from agentobs_debug.errors import CorruptEventError, TraceNotFoundError
 def load_events(path: str) -> EventStream:
     """Load events from a JSONL file using the AgentOBS EventStream.
 
-    Delegates all parsing to ``tracium.stream.EventStream.from_file()``.
+    Delegates all parsing to ``agentobs.stream.EventStream.from_file()``.
 
     Parameters
     ----------

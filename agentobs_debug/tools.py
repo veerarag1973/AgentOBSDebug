@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 
-from tracium.stream import EventStream
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
 

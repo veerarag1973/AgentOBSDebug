@@ -1,6 +1,6 @@
 # agentobs-debug Tutorial
 
-**Version:** 1.0.0  
+**Version:** 1.0.1  
 **Audience:** Developers who build or operate AI agents with the AgentOBS SDK and need to inspect, debug, and understand trace data.
 
 ---
@@ -153,13 +153,13 @@ pip install agentobs-debug
 
 **Requirements:**
 - Python ≥ 3.10
-- `agentobs >= 1.0` (installed automatically as a dependency)
+- `agentobs >= 1.0.5` (installed automatically as a dependency)
 
 Verify the install:
 
 ```bash
 agentobs-debug --version
-# agentobs-debug 1.0.0
+# agentobs-debug 1.0.1
 
 agentobs-debug --help
 ```
@@ -561,7 +561,7 @@ agentobs-debug tree events.jsonl --trace 4bf92f3577b34da6a3ce929d0e0e4736 > tree
 
 ```bash
 agentobs-debug --version
-# agentobs-debug 1.0.0
+# agentobs-debug 1.0.1
 ```
 
 **Pipe into a pager for long timelines:**

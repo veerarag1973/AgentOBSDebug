@@ -7,7 +7,7 @@ tools, decisions, and attribution.
 
 from __future__ import annotations
 
-from tracium.event import Event
+from agentobs.event import Event
 
 
 def filter_by_step_name(

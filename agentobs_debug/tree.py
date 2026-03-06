@@ -10,7 +10,7 @@ envelope to reconstruct the hierarchy.  Siblings are sorted by
 
 from __future__ import annotations
 
-from tracium.stream import EventStream
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
 
@@ -46,7 +46,7 @@ def print_trace_tree(trace_id: str, stream: EventStream | None = None) -> None:
         )
     from typing import Any
 
-    from tracium.event import Event
+    from agentobs.event import Event
 
     from agentobs_debug.loader import _filter_by_trace
 

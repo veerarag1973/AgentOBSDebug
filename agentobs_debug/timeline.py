@@ -9,7 +9,7 @@ event payload.
 
 from __future__ import annotations
 
-from tracium.stream import EventStream
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
 
@@ -56,7 +56,7 @@ def timeline(
         raise AgentOBSDebugError(
             "An EventStream is required. Call load_events() first and pass the result as `stream`."
         )
-    from tracium.event import Event
+    from agentobs.event import Event
 
     from agentobs_debug.loader import _filter_by_trace
 

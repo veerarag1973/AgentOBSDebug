@@ -42,11 +42,13 @@ def _add_format(
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    from agentobs_debug import __version__
+
     parser = argparse.ArgumentParser(
         prog="agentobs-debug",
         description="Developer tools for inspecting and debugging AgentOBS traces.",
     )
-    parser.add_argument("--version", action="version", version="agentobs-debug 1.0.0")
+    parser.add_argument("--version", action="version", version=f"agentobs-debug {__version__}")
 
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
     subparsers.required = True

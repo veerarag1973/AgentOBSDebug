@@ -8,7 +8,7 @@ Developer tools for inspecting, replaying, and visualising [AgentOBS](https://gi
 pip install agentobs-debug
 ```
 
-Requires Python ≥ 3.10 and `agentobs >= 1.0`.
+Requires Python ≥ 3.10 and `agentobs >= 1.0.5`.
 
 ---
 
@@ -221,5 +221,5 @@ See [docs/api-reference.md](docs/api-reference.md) for the full reference: all f
 
 ## Dependencies
 
-- `agentobs >= 1.0` — AgentOBS SDK (provides `EventStream`, event types)
+- `agentobs >= 1.0.5` — AgentOBS SDK (provides `EventStream`, event types)
 - Python ≥ 3.10

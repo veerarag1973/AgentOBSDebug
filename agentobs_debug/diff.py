@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from tracium.stream import EventStream
+from agentobs.stream import EventStream
 
 from agentobs_debug.errors import AgentOBSDebugError
 
